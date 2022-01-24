@@ -1,206 +1,126 @@
-from tkinter import *
-from random import randint
-window = Tk()
-hauteur = window.winfo_screenheight()
-largeur = window.winfo_screenwidth()
-largeur = str(int(largeur/2))
-hauteur = str(int(hauteur/1.1))
-window.geometry(largeur+"x"+hauteur+"0")
-LargeurPlateau = int(largeur) 
-HauteurPlateau = int(hauteur)
-#premier canva qu'on va placer a partir du haut
-Plateau = Canvas(window, width = LargeurPlateau, height = HauteurPlateau, bg = "black")
-Plateau.pack(side="top")
+import pygame, sys, time, random
 
 
-NombreDeCases= 40
-LargeurCase = (LargeurPlateau / NombreDeCases)
-HauteurCase = (HauteurPlateau / NombreDeCases)
-print(LargeurCase)
-print(HauteurCase)
-def init_serpent (x, y):
 
-    #on definit les 4 position des coin pour crée le serpent
-    x1 = x * LargeurCase
-    y1 = y * HauteurCase
-    x2 = x1 + LargeurCase
-    y2 = y1 + HauteurCase
 
-    #remplissage du rectangle
-    Plateau.create_rectangle(x1,y1,x2, y2, fill="white")
+speed = 15
 
-#On renvoie une case aléatoire
-def case_aleatoire():
+#windows sizes
 
-    AleatoireX = randint(0, NombreDeCases - 1)
-    AleatoireY = randint(0, NombreDeCases - 1)
+frame_size_x = 1920
+frame_size_y= 1080
 
-    return (AleatoireX, AleatoireY)
+pygame.init()
 
-# affiche le serpent, l'argument étant la liste snake
-def dessine_serpent(snake):
+#initialise game window
 
-    #tant qu'il y a des cases dans snake
-    for case in snake:
+pygame.display.set_caption("Snake")
+game_window = pygame.display.set_mode((frame_size_x, frame_size_y))
 
-        # on récupère les coordonées de la case
-        x, y = case
-        # on colorie la case
-        init_serpent(x, y)
+# colors
+black = pygame.Color(0,0,0)
+white = pygame.Color(255,255,255)
+red = pygame.Color(255,0,0)
+green = pygame.Color(0,255,0)
+blue = pygame.Color(0,0,255)
 
-########################################################################################################################
 
-#On retourne le chiffre 1 si la case est dans le snake, 0 sinon
-def etre_dans_snake(case):
+#fps_controller = pygame.time.Clock()
+# one snake square size
+square_size = 30
 
-    if case in SNAKE:
-        EtreDedans = 1
+def init_vars():
+    global head_pos, snake_body, food_pos, food_spawn, score, direction
+    direction = "RIGHT"
+    head_pos = [120,60]
+    snake_body = [[120,60]]
+    food_pos = [random.randrange(1,(frame_size_x // square_size)) * square_size, 
+                random.randrange(1,(frame_size_y // square_size)) * square_size]
+    food_spawn = True
+    score = 0
+    
+init_vars()
+
+def show_score(choice, color, font, size):
+    score_font = pygame.font.SysFont(font, size)
+    score_surface = score_font.render("Score: " + str(score), True, color)
+    score_rect = score_surface.get_rect()
+    if choice == 1:
+        score_rect.midtop = (frame_size_x / 10, 15)
     else:
-        EtreDedans = 0
+        score_rect.midtop = (frame_size_x/2, frame_size_y/1.25)
+    
+    game_window.blit(score_surface, score_rect)
+    
 
-    return EtreDedans
+#game loop
 
-#On renvoie un fruit aléatoire qui n'est pas dans le serpent
-def fruit_aleatoire():
-
-    # choix d'un fruit aléatoire
-    FruitAleatoire = case_aleatoire()
-
-    # tant que le fruit aléatoire est dans le serpent
-    while (etre_dans_snake(FruitAleatoire)):
-        # on prend un nouveau fruit aléatoire
-        FruitAleatoire = case_aleatoire
-
-
-
-#On renvoie un fruit aléatoire qui n'est pas dans le serpent
-def fruit_aleatoire():
-
-    # choix d'un fruit aléatoire
-    FruitAleatoire = case_aleatoire()
-
-    # tant que le fruit aléatoire est dans le serpent
-    while (etre_dans_snake(FruitAleatoire)):
-        # on prend un nouveau fruit aléatoire
-        FruitAleatoire = case_aleatoire
-
-    return FruitAleatoire
-
-def dessine_fruit():
-
-    global FRUIT
-
-    x, y = FRUIT
-
-    x1 = x * LargeurCase
-    y1 = y * HauteurCase
-    x2 = x1 + LargeurCase
-    y2 = y1 + HauteurCase
-
-    #On remplie l'ovale en rouge pour le fruit
-
-    Plateau.create_rectangle(x1, y1, x2, y2, fill = "red")
-
-########################################################################################################################
-
-#Ces quatres fonctions permettent le déplacement dans quatres directions du serpent
-#elles mettent à jour les coordonées du mouvement
-def left_key(event):
-    global MOUVEMENT
-    MOUVEMENT = (-1, 0)
-
-def right_key(event):
-    global MOUVEMENT
-    MOUVEMENT = (1, 0)
-
-def up_key(event):
-    global MOUVEMENT
-    MOUVEMENT = (0, -1)
-
-def down_key(event):
-    global MOUVEMENT
-    MOUVEMENT = (0, 1)
-
-# indique les fonctions à appeler suite à une pression sur les flèches (ne fonctionne que si la fenêtre a le focus)
-window.bind("<Left>", left_key)
-window.bind("<Right>", right_key)
-window.bind("<Up>", up_key)
-window.bind("<Down>", down_key)
-
-
-# met à jour la variable PERDU indiquant si on a perdu
-def serpent_mort(NouvelleTete):
-
-    global PERDU
-
-    NouvelleTeteX, NouvelleTeteY = NouvelleTete
-
-    # si le serpent se mange lui-même (sauf au démarrage, c'est-à-dire: sauf quand MOUVEMENT vaut (0, 0))
-    # OU si on sort du canvas
-    if (etre_dans_snake(NouvelleTete) and MOUVEMENT != (0, 0)) or NouvelleTeteX < 0 or NouvelleTeteY < 0 or NouvelleTeteX >= NombreDeCases or NouvelleTeteY >= NombreDeCases:
-        # alors, on a perdu
-        PERDU = 1
-
-# met à jour le snake
-def mise_a_jour_snake():
-
-    global SNAKE, FRUIT
-
-    # on récupère les coordonées de la tête actuelle
-    (AncienneTeteX, AncienneTeteY) = SNAKE[0]
-    # on récupère les valeurs du mouvement
-    MouvementX, MouvementY = MOUVEMENT
-    # on calcule les coordonées de la nouvelle tête
-    NouvelleTete = (AncienneTeteX + MouvementX, AncienneTeteY + MouvementY)
-    # on vérifie si on a perdu
-    serpent_mort(NouvelleTete)
-    # on ajoute la nouvelle tête
-    SNAKE.insert(0, NouvelleTete)
-
-    # si on mange un fruit
-    if NouvelleTete == FRUIT:
-        # on génère un nouveau fruit
-        FRUIT = fruit_aleatoire()
-    # sinon
-    else:
-        # on enlève le dernier élément du serpent (c'est-à-dire: on ne grandit pas)
-        SNAKE.pop()
+while True:
+    time.sleep(0.05)
+    for event in pygame.event.get():
         
-
-# fonction principale
-def tache():
-
-    # on met à jour l'affichage et les événements du clavier
-    #window.update
-    window.update_idletasks()
-    # on met à jour le snake
-    mise_a_jour_snake()
-    # on supprime tous les éléments du plateau
-    Plateau.delete("all")
-    # on redessine le fruit
-    dessine_fruit()
-    # on redessine le serpent
-    dessine_serpent(SNAKE)
-
-    # si on a perdu
-    if PERDU:
-        exit()
-    # sinon
+        if event.type == pygame.KEYDOWN:
+            if ( event.key == pygame.K_UP
+                and direction != "DOWN"):
+                direction = "UP"
+            elif  ( event.key == pygame.K_DOWN 
+                and direction != "UP"):
+                direction = "DOWN"
+            elif  ( event.key == pygame.K_LEFT
+                and direction != "RIGHT"):
+                direction = "LEFT"
+            elif  ( event.key == pygame.K_RIGHT
+                and direction != "LEFT"):
+                direction = "RIGHT"
+    
+    if direction == "UP":
+        head_pos[1] -= square_size
+    elif direction == "DOWN":
+        head_pos[1] += square_size
+    elif direction == "LEFT":
+        head_pos[0] -= square_size
     else:
-        # on rappelle la fonction principale
-        window.after(20, tache)
+        head_pos[0] += square_size
+        
+    if head_pos[0] < 0:
+        head_pos[0] = frame_size_x - square_size
+    elif head_pos[0] > frame_size_x - square_size:
+        head_pos[0] = 0
+    elif head_pos[1] < 0:
+        head_pos[1] = frame_size_y - square_size
+    elif head_pos[1] > frame_size_y - square_size:
+        head_pos[1] = 0
+        
+    #eating apple
+    snake_body.insert(0, list(head_pos))
+    if head_pos[0] == food_pos[0] and head_pos[1] == food_pos[1]:
+        score += 1
+        food_spawn = False
+    else:
+        snake_body.pop()
 
-########################################################################################################################
+    # spawn food
+    if not food_spawn:
+        food_pos = [random.randrange(1,(frame_size_x // square_size)) * square_size, 
+            random.randrange(1,(frame_size_y // square_size)) * square_size]
+        food_spawn = True
 
-# le snake initial: une liste avec une case aléatoire
-SNAKE = [case_aleatoire()]
-# le fruit initial
-FRUIT = fruit_aleatoire()
-# le mouvement initial, une paire d'entiers représentant les coordonées du déplacement, au départ on ne bouge pas
-MOUVEMENT = (0, 0)
-# la variable permettant de savoir si on a perdu, sera mise à 1 si on perd
-PERDU = 0
+    # GFX
+    game_window.fill(black)
+    for pos in snake_body:
+        pygame.draw.rect(game_window, green, pygame.Rect(
+            pos[0] + 2, pos[1] + 2,
+            square_size -2, square_size -2 ))
+        
+    pygame.draw.rect(game_window,red, pygame.Rect(food_pos[0], 
+                    food_pos[1], square_size, square_size))
+    
+    # game over condiditons
 
-# on appellera la fonction principale pour la première fois juste après être entré dans la boucle de la fenêtre
-window.after(0, tache())
-#window.mainloop()
+    for block in snake_body[1:]:
+        if head_pos[0] == block[0] and head_pos[1] == block[1]:
+            init_vars()
+
+    show_score(1,white, 'consolas', 20)
+    pygame.display.update()
+    #fps_controller.tick(speed)
