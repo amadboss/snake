@@ -1,59 +1,52 @@
-import pygame, sys, time, random
+import pygame
+import sys
+import time
+import random
 
+#Taille de l'ecran en pixel
+taille_ecran_x = 1920
+taille_ecran_y = 1080
 
-
-
-speed = 15
-
-#windows sizes
-
-frame_size_x = 1920
-frame_size_y= 1080
-
+#initialisation de pygame
 pygame.init()
 
-#initialise game window
+#initialisation du plateau de jeux
+game_window = pygame.display.set_mode((taille_ecran_x, taille_ecran_y))
 
-pygame.display.set_caption("Snake")
-game_window = pygame.display.set_mode((frame_size_x, frame_size_y))
-
-# colors
-black = pygame.Color(0,0,0)
-white = pygame.Color(255,255,255)
-red = pygame.Color(255,0,0)
-green = pygame.Color(0,255,0)
-blue = pygame.Color(0,0,255)
-
-
-#fps_controller = pygame.time.Clock()
-# one snake square size
-square_size = 30
+# couleur
+noir = pygame.Color(0,0,0)
+blanc = pygame.Color(255,255,255)
+rouge = pygame.Color(255,0,0)
+gris = pygame.Color(192,192,192)
+rect_taille = 30
 
 def init_vars():
-    global head_pos, snake_body, food_pos, food_spawn, score, direction
+    global tete, corp, pomme, pomme_bool, score, direction, mur, nb_mur, j
     direction = "RIGHT"
-    head_pos = [120,60]
-    snake_body = [[120,60]]
-    food_pos = [random.randrange(1,(frame_size_x // square_size)) * square_size, 
-                random.randrange(1,(frame_size_y // square_size)) * square_size]
-    food_spawn = True
+    j = 0
+    tete = [120,60]
+    corp = [[120,60]]
+    nb_mur = random.randrange(5,30)
+    mur = []
+    pomme = [random.randrange(1,(taille_ecran_x // rect_taille)) * rect_taille,random.randrange(1,(taille_ecran_y // rect_taille)) * rect_taille]
+    pomme_bool = True
     score = 0
-    
 init_vars()
 
-def show_score(choice, color, font, size):
+def show_score(color, font, size):
     score_font = pygame.font.SysFont(font, size)
     score_surface = score_font.render("Score: " + str(score), True, color)
     score_rect = score_surface.get_rect()
-    if choice == 1:
-        score_rect.midtop = (frame_size_x / 10, 15)
-    else:
-        score_rect.midtop = (frame_size_x/2, frame_size_y/1.25)
-    
+    score_rect.midtop = (taille_ecran_x / 10, 15)
     game_window.blit(score_surface, score_rect)
-    
 
-#game loop
+def genere_mur():    
+    for i in range(nb_mur):
+        print("on entre",i,"fois")
+        #double tableau style [[0], [1260, 780], [1], [90, 450], [2], [1350, 960], [3], [1830, 30]]
+        mur.extend(([i],[random.randrange(1,(taille_ecran_x // rect_taille)) * rect_taille,random.randrange(1,(taille_ecran_y // rect_taille)) * rect_taille]))
+        print(mur,"et i",i)
+genere_mur()
 
 while True:
     time.sleep(0.05)
@@ -70,57 +63,59 @@ while True:
                 and direction != "RIGHT"):
                 direction = "LEFT"
             elif  ( event.key == pygame.K_RIGHT
+                    
                 and direction != "LEFT"):
                 direction = "RIGHT"
     
     if direction == "UP":
-        head_pos[1] -= square_size
+        tete[1] -= rect_taille
     elif direction == "DOWN":
-        head_pos[1] += square_size
+        tete[1] += rect_taille
     elif direction == "LEFT":
-        head_pos[0] -= square_size
+        tete[0] -= rect_taille
     else:
-        head_pos[0] += square_size
+        tete[0] += rect_taille
         
-    if head_pos[0] < 0:
-        head_pos[0] = frame_size_x - square_size
-    elif head_pos[0] > frame_size_x - square_size:
-        head_pos[0] = 0
-    elif head_pos[1] < 0:
-        head_pos[1] = frame_size_y - square_size
-    elif head_pos[1] > frame_size_y - square_size:
-        head_pos[1] = 0
+    if tete[0] < 0:
+        tete[0] = taille_ecran_x - rect_taille
+    elif tete[0] > taille_ecran_x - rect_taille:
+        tete[0] = 0
+    elif tete[1] < 0:
+        tete[1] = taille_ecran_y - rect_taille
+    elif tete[1] > taille_ecran_y - rect_taille:
+        tete[1] = 0
         
     #eating apple
-    snake_body.insert(0, list(head_pos))
-    if head_pos[0] == food_pos[0] and head_pos[1] == food_pos[1]:
+    corp.insert(0, list(tete))
+    if tete[0] == pomme[0] and tete[1] == pomme[1]:
         score += 1
-        food_spawn = False
+        pomme_bool = False
     else:
-        snake_body.pop()
+        corp.pop()
 
     # spawn food
-    if not food_spawn:
-        food_pos = [random.randrange(1,(frame_size_x // square_size)) * square_size, 
-            random.randrange(1,(frame_size_y // square_size)) * square_size]
-        food_spawn = True
-
-    # GFX
-    game_window.fill(black)
-    for pos in snake_body:
-        pygame.draw.rect(game_window, green, pygame.Rect(
-            pos[0] + 2, pos[1] + 2,
-            square_size -2, square_size -2 ))
+    if not pomme_bool:
+        pomme = [random.randrange(1,(taille_ecran_x // rect_taille)) * rect_taille, random.randrange(1,(taille_ecran_y // rect_taille)) * rect_taille]
+        pomme_bool = True
         
-    pygame.draw.rect(game_window,red, pygame.Rect(food_pos[0], 
-                    food_pos[1], square_size, square_size))
+    #remplisage du plateau en noir
+    game_window.fill(noir)
+    #spawn de la pomme
+    pygame.draw.rect(game_window,rouge, pygame.Rect(pomme[0], pomme[1], rect_taille // 2, rect_taille// 2))
+    #pour chaque mure dans le tableau. aficher un carer gris corespondant a la valeur du tableau sous jaccent 
+    for j in range(0,nb_mur,2):
+        pygame.draw.rect(game_window,gris, pygame.Rect(mur[j+1][0], mur[j+1][1], rect_taille, rect_taille))
+        if tete[0] == mur[j+1][0] and tete[1] == mur[j+1][1]:
+            init_vars()
+    for pos in corp:
+        pygame.draw.rect(game_window, blanc, pygame.Rect(pos[0] , pos[1] ,rect_taille , rect_taille ))
+        
     
     # game over condiditons
 
-    for block in snake_body[1:]:
-        if head_pos[0] == block[0] and head_pos[1] == block[1]:
+    for block in corp[1:]:
+        if tete[0] == block[0] and tete[1] == block[1]:
             init_vars()
 
-    show_score(1,white, 'consolas', 20)
+    show_score(blanc, 'arial', 20)
     pygame.display.update()
-    #fps_controller.tick(speed)
